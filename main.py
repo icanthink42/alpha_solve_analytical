@@ -82,8 +82,8 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
         if solutions:
             # Use all solutions
             for solution in solutions:
-                solution_str = Eq(var, solution)
-                visible_solutions.append(to_latex(solution_str))
+                solution_eq = Eq(var, solution)
+                visible_solutions.append(to_latex(solution_eq))
 
             # Add or update the variable in context
             new_var = Variable.create_analytical(str(var), str(solution))
