@@ -1,0 +1,7 @@
+[plugin]
+id = "icanthink.alpha_solve_analytical"
+name = "Alpha Solve Analytical"
+version = "1.0.0"
+
+[[functions]]
+functionName = "test"
