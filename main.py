@@ -1,4 +1,4 @@
-from sympy import solve, symbols, sympify
+from sympy import solve, symbols, sympify, Eq
 
 
 def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
@@ -82,7 +82,7 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
         if solutions:
             # Use all solutions
             for solution in solutions:
-                solution_str = sp.Eq(var, solution)
+                solution_str = Eq(var, solution)
                 visible_solutions.append(to_latex(solution_str))
 
             # Add or update the variable in context
