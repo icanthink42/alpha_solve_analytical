@@ -74,10 +74,10 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
         new_variables = list(input_data.context.variables)
 
         if solutions:
-            # Take the first solution
-            solution = solutions[0]
-            solution_str = f"{var} = {solution}"
-            visible_solutions.append(solution_str)
+            # Use all solutions
+            for solution in solutions:
+                solution_str = f"{var} = {solution}"
+                visible_solutions.append(solution_str)
 
             # Add or update the variable in context
             new_var = Variable.create_analytical(str(var), str(solution))
