@@ -4,4 +4,4 @@ name = "Alpha Solve Analytical"
 version = "1.0.0"
 
 [[functions]]
-functionName = "test"
+functionName = "solve_simple"
