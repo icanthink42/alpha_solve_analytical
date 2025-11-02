@@ -82,7 +82,7 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
         if solutions:
             # Use all solutions
             for solution in solutions:
-                solution_str = f"{var} = {solution}"
+                solution_str = sp.Eq(var, solution)
                 visible_solutions.append(to_latex(solution_str))
 
             # Add or update the variable in context
