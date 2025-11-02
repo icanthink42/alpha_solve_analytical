@@ -83,7 +83,7 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
             # Use all solutions
             for solution in solutions:
                 solution_str = f"{var} = {solution}"
-                visible_solutions.append(solution_str)
+                visible_solutions.append(to_latex(solution_str))
 
             # Add or update the variable in context
             new_var = Variable.create_analytical(str(var), str(solution))
