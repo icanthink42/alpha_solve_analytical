@@ -1,4 +1,4 @@
-from sympy import solve
+from sympy import solve, symbols, sympify
 
 
 def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
@@ -55,6 +55,12 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
                 visible_solutions=['Unable to solve: not an equation'],
                 new_context=input_data.context
             )
+
+        # Substitute known variables from context
+        for context_var in input_data.context.variables:
+            var_symbol = symbols(context_var.name)
+            var_value = sympify(context_var.value)
+            equation = equation.subs(var_symbol, var_value)
 
         # Get the variable to solve for (first free symbol)
         variables = list(equation.free_symbols)
