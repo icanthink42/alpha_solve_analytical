@@ -2,6 +2,7 @@
 id = "icanthink.alpha_solve_analytical"
 name = "Alpha Solve Analytical"
 version = "1.0.0"
+python_libraries = ["scipy"]
 
 [[functions]]
 functionName = "solve_simple"
