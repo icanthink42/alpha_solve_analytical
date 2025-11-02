@@ -1,6 +1,11 @@
+import sympy as sp
+
 def solve_simple(input_data):
+    x = sp.symbols('x')
+    equation = sp.Eq(x**2 - 4, 0)
+    solution = sp.solve(equation, x)
     return CellFunctionResult(
-        visible_solutions=['1'],
+        visible_solutions=[str(solution)],
         new_context=input_data.context
     )
 
