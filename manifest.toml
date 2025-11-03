@@ -5,6 +5,9 @@ version = "1.0.0"
 python_libraries = ["sympy"]
 
 [[functions]]
+functionName = "check_equal"
+
+[[functions]]
 functionName = "simple_simplify"
 
 [[functions]]

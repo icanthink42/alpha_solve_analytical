@@ -2,6 +2,97 @@ from sympy import solve, symbols, sympify, Eq, simplify
 from sympy.core.relational import Equality
 
 
+def meta_check_equal(input_data: CellFunctionInput) -> MetaFunctionResult:
+    """
+    Check if an equation can be verified.
+    Returns use_result=True only if:
+    - Cell has LaTeX content
+    - LaTeX can be parsed into a SymPy expression
+    - Expression is an equation (Equality type)
+    - ALL variables in the equation are defined in the context
+    """
+    try:
+        latex = input_data.cell.get('latex', '').strip()
+
+        # Check if there's any content
+        if not latex:
+            return MetaFunctionResult(index=25, name='Check Equality', use_result=False)
+
+        # Try to parse it
+        expr = from_latex(latex)
+
+        # Check if it's an equation (Equality type)
+        if not isinstance(expr, Equality):
+            return MetaFunctionResult(index=25, name='Check Equality', use_result=False)
+
+        # Check if ALL variables are in the context
+        context_var_names = {v.name for v in input_data.context.variables}
+        all_vars_defined = all(
+            str(symbol) in context_var_names
+            for symbol in expr.free_symbols
+        )
+
+        if not all_vars_defined:
+            # Not all variables defined, can't check
+            return MetaFunctionResult(index=25, name='Check Equality', use_result=False)
+
+        # All variables are defined, we can check!
+        return MetaFunctionResult(index=25, name='Check Equality', use_result=True)
+    except Exception as e:
+        # If anything fails, don't use this checker
+        return MetaFunctionResult(index=25, name='Check Equality', use_result=False)
+
+
+def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
+    """
+    Check if an equation is true by substituting all known variables.
+    Returns "True" or "False" as the solution.
+    """
+    latex = input_data.cell.get('latex', '').strip()
+
+    try:
+        # Parse the LaTeX equation
+        expr = from_latex(latex)
+
+        # It should be an Equality
+        if not isinstance(expr, Equality):
+            return CellFunctionResult(
+                visible_solutions=['Not an equation'],
+                new_context=input_data.context
+            )
+
+        # Substitute all variables from context
+        equation = expr
+        for context_var in input_data.context.variables:
+            var_symbol = symbols(context_var.name)
+            # Use the first value if multiple exist
+            if context_var.values:
+                var_value = sympify(context_var.values[0])
+                equation = equation.subs(var_symbol, var_value)
+
+        # Simplify both sides
+        lhs = simplify(equation.lhs)
+        rhs = simplify(equation.rhs)
+
+        # Check if they're equal
+        is_equal = simplify(lhs - rhs) == 0
+
+        # Return result
+        result_text = 'True' if is_equal else 'False'
+
+        return CellFunctionResult(
+            visible_solutions=[result_text],
+            new_context=input_data.context
+        )
+
+    except Exception as e:
+        # If checking fails, return error message
+        return CellFunctionResult(
+            visible_solutions=[f"Error checking equality: {str(e)}"],
+            new_context=input_data.context
+        )
+
+
 def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
     """
     Check if the expression can be simplified.
