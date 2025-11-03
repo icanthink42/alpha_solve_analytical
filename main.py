@@ -19,6 +19,7 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
 
         # Try to parse it first
         expr = from_latex(latex)
+        print(expr)
 
         # Check if the parsed expression is an equation
         if isinstance(expr, Equality):
