@@ -23,6 +23,10 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
         # Try to parse it
         expr = from_latex(latex)
 
+        # Check if the parsed expression is an equation (has lhs and rhs)
+        if hasattr(expr, 'lhs') and hasattr(expr, 'rhs'):
+            return MetaFunctionResult(index=50, name='Simplify', use_result=False)
+
         # It's simplifiable!
         return MetaFunctionResult(index=50, name='Simplify', use_result=True)
     except Exception as e:
