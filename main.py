@@ -203,6 +203,9 @@ def simple_simplify(input_data: CellFunctionInput) -> CellFunctionResult:
             simplified = simplify(expr)
             visible_solutions.append(to_latex(simplified))
 
+        # Remove duplicates while preserving order
+        visible_solutions = list(dict.fromkeys(visible_solutions))
+
         # Context remains unchanged
         return CellFunctionResult(
             visible_solutions=visible_solutions,
