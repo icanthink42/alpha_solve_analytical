@@ -1,4 +1,66 @@
-from sympy import solve, symbols, sympify, Eq
+from sympy import solve, symbols, sympify, Eq, simplify
+
+
+def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
+    """
+    Check if the expression can be simplified.
+    Returns use_result=True only if:
+    - Cell has LaTeX content
+    - LaTeX does NOT contain an equals sign (=)
+    - LaTeX can be parsed into a SymPy expression
+    """
+    try:
+        latex = input_data.cell.get('latex', '').strip()
+
+        # Check if there's any content
+        if not latex:
+            return MetaFunctionResult(index=50, name='Simplify', use_result=False)
+
+        # Check if it's NOT an equation (no =)
+        if '=' in latex:
+            return MetaFunctionResult(index=50, name='Simplify', use_result=False)
+
+        # Try to parse it
+        expr = from_latex(latex)
+
+        # It's simplifiable!
+        return MetaFunctionResult(index=50, name='Simplify', use_result=True)
+    except Exception as e:
+        # If anything fails, don't use this simplifier
+        return MetaFunctionResult(index=50, name='Simplify', use_result=False)
+
+
+def simple_simplify(input_data: CellFunctionInput) -> CellFunctionResult:
+    """
+    Simplify an expression and display the result.
+    """
+    latex = input_data.cell.get('latex', '').strip()
+
+    try:
+        # Parse the LaTeX expression
+        expr = from_latex(latex)
+
+        # Simplify the expression
+        simplified = simplify(expr)
+
+        # Create equation showing original = simplified
+        result_eq = Eq(expr, simplified)
+
+        # Format as LaTeX
+        visible_solutions = [to_latex(result_eq)]
+
+        # Context remains unchanged
+        return CellFunctionResult(
+            visible_solutions=visible_solutions,
+            new_context=input_data.context
+        )
+
+    except Exception as e:
+        # If simplification fails, return error message
+        return CellFunctionResult(
+            visible_solutions=[f"Error simplifying expression: {str(e)}"],
+            new_context=input_data.context
+        )
 
 
 def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:

@@ -5,4 +5,7 @@ version = "1.0.0"
 python_libraries = ["sympy"]
 
 [[functions]]
+functionName = "simple_simplify"
+
+[[functions]]
 functionName = "solve_simple"
