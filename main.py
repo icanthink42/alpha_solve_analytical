@@ -43,15 +43,9 @@ def simple_simplify(input_data: CellFunctionInput) -> CellFunctionResult:
         # Simplify the expression
         simplified = simplify(expr)
 
-        # Create equation showing original = simplified
-        result_eq = Eq(expr, simplified)
-
-        # Format as LaTeX
-        visible_solutions = [to_latex(result_eq)]
-
         # Context remains unchanged
         return CellFunctionResult(
-            visible_solutions=visible_solutions,
+            visible_solutions=[to_latex(simplified)],
             new_context=input_data.context
         )
 
