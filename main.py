@@ -62,37 +62,6 @@ def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Special case: if both sides are just symbols (e.g., x = y), check if they have the same values
-        lhs_is_symbol = len(expr.lhs.free_symbols) == 1 and expr.lhs.is_Symbol
-        rhs_is_symbol = len(expr.rhs.free_symbols) == 1 and expr.rhs.is_Symbol
-
-        if lhs_is_symbol and rhs_is_symbol:
-            lhs_symbol = list(expr.lhs.free_symbols)[0]
-            rhs_symbol = list(expr.rhs.free_symbols)[0]
-
-            # Find the context variables
-            lhs_var = None
-            rhs_var = None
-            for context_var in input_data.context.variables:
-                if context_var.name == str(lhs_symbol):
-                    lhs_var = context_var
-                if context_var.name == str(rhs_symbol):
-                    rhs_var = context_var
-
-            # If both variables exist in context, check if their value sets are equal
-            if lhs_var and rhs_var and lhs_var.values and rhs_var.values:
-                # Compare sets of simplified values
-                lhs_values = {str(simplify(sympify(v))) for v in lhs_var.values}
-                rhs_values = {str(simplify(sympify(v))) for v in rhs_var.values}
-
-                is_equal = lhs_values == rhs_values
-                result_text = 'True' if is_equal else 'False'
-
-                return CellFunctionResult(
-                    visible_solutions=[result_text],
-                    new_context=input_data.context
-                )
-
         # Build list of context variables and their values
         from itertools import product
 
@@ -117,23 +86,27 @@ def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
         var_symbols = [v[0] for v in context_vars_with_values]
         value_lists = [v[1] for v in context_vars_with_values]
 
-        all_equal = True
+        left_hand_sides = []
+        right_hand_sides = []
         for value_combo in product(*value_lists):
             # Create substitution dictionary
             subs_dict = dict(zip(var_symbols, [sympify(v) for v in value_combo]))
 
-            # Substitute into both sides
-            lhs = expr.lhs.subs(subs_dict)
-            rhs = expr.rhs.subs(subs_dict)
+            # Substitute and simplify
+            lhs_result = simplify(expr.lhs.subs(subs_dict))
+            rhs_result = simplify(expr.rhs.subs(subs_dict))
 
-            # Simplify both sides
-            lhs = simplify(lhs)
-            rhs = simplify(rhs)
+            left_hand_sides.append(lhs_result)
+            right_hand_sides.append(rhs_result)
 
-            # Check if they're equal
-            is_equal = simplify(lhs - rhs) == 0
+        # Sort by string representation for comparison
+        left_hand_sides_sorted = sorted(left_hand_sides, key=str)
+        right_hand_sides_sorted = sorted(right_hand_sides, key=str)
 
-            if not is_equal:
+        # Compare element-by-element
+        all_equal = True
+        for i in range(len(left_hand_sides_sorted)):
+            if simplify(left_hand_sides_sorted[i] - right_hand_sides_sorted[i]) != 0:
                 all_equal = False
                 break
 
