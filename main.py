@@ -46,8 +46,8 @@ def meta_check_equal(input_data: CellFunctionInput) -> MetaFunctionResult:
 def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
     """
     Check if an equation is true by substituting all known variables.
-    Checks all combinations of variable values.
-    Returns "True" only if the equation holds for ALL combinations, otherwise "False".
+    For simple variable equality (e.g., x = y), checks if both variables have the same set of values (ignoring order).
+    For other equations, checks if the equation holds for all combinations of variable values.
     """
     latex = input_data.cell.get('latex', '').strip()
 
@@ -61,6 +61,37 @@ def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
                 visible_solutions=['Not an equation'],
                 new_context=input_data.context
             )
+
+        # Special case: if both sides are just symbols (e.g., x = y), check if they have the same values
+        lhs_is_symbol = len(expr.lhs.free_symbols) == 1 and expr.lhs.is_Symbol
+        rhs_is_symbol = len(expr.rhs.free_symbols) == 1 and expr.rhs.is_Symbol
+
+        if lhs_is_symbol and rhs_is_symbol:
+            lhs_symbol = list(expr.lhs.free_symbols)[0]
+            rhs_symbol = list(expr.rhs.free_symbols)[0]
+
+            # Find the context variables
+            lhs_var = None
+            rhs_var = None
+            for context_var in input_data.context.variables:
+                if context_var.name == str(lhs_symbol):
+                    lhs_var = context_var
+                if context_var.name == str(rhs_symbol):
+                    rhs_var = context_var
+
+            # If both variables exist in context, check if their value sets are equal
+            if lhs_var and rhs_var and lhs_var.values and rhs_var.values:
+                # Compare sets of simplified values
+                lhs_values = {str(simplify(sympify(v))) for v in lhs_var.values}
+                rhs_values = {str(simplify(sympify(v))) for v in rhs_var.values}
+
+                is_equal = lhs_values == rhs_values
+                result_text = 'True' if is_equal else 'False'
+
+                return CellFunctionResult(
+                    visible_solutions=[result_text],
+                    new_context=input_data.context
+                )
 
         # Build list of context variables and their values
         from itertools import product
