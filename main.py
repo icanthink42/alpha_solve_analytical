@@ -46,7 +46,8 @@ def meta_check_equal(input_data: CellFunctionInput) -> MetaFunctionResult:
 def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
     """
     Check if an equation is true by substituting all known variables.
-    Returns "True" or "False" as the solution.
+    Checks all combinations of variable values.
+    Returns "True" only if the equation holds for ALL combinations, otherwise "False".
     """
     latex = input_data.cell.get('latex', '').strip()
 
@@ -61,27 +62,52 @@ def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Substitute all variables from context on both sides separately
-        lhs = expr.lhs
-        rhs = expr.rhs
+        # Build list of context variables and their values
+        from itertools import product
 
+        context_vars_with_values = []
         for context_var in input_data.context.variables:
             var_symbol = symbols(context_var.name)
-            # Use the first value if multiple exist
-            if context_var.values:
-                var_value = sympify(context_var.values[0])
-                lhs = lhs.subs(var_symbol, var_value)
-                rhs = rhs.subs(var_symbol, var_value)
+            if var_symbol in expr.free_symbols and context_var.values:
+                context_vars_with_values.append((var_symbol, context_var.values))
 
-        # Simplify both sides
-        lhs = simplify(lhs)
-        rhs = simplify(rhs)
+        # If no context variables to check, just check the equation as-is
+        if not context_vars_with_values:
+            lhs = simplify(expr.lhs)
+            rhs = simplify(expr.rhs)
+            is_equal = simplify(lhs - rhs) == 0
+            result_text = 'True' if is_equal else 'False'
+            return CellFunctionResult(
+                visible_solutions=[result_text],
+                new_context=input_data.context
+            )
 
-        # Check if they're equal
-        is_equal = simplify(lhs - rhs) == 0
+        # Check all combinations of variable values
+        var_symbols = [v[0] for v in context_vars_with_values]
+        value_lists = [v[1] for v in context_vars_with_values]
+
+        all_equal = True
+        for value_combo in product(*value_lists):
+            # Create substitution dictionary
+            subs_dict = dict(zip(var_symbols, [sympify(v) for v in value_combo]))
+
+            # Substitute into both sides
+            lhs = expr.lhs.subs(subs_dict)
+            rhs = expr.rhs.subs(subs_dict)
+
+            # Simplify both sides
+            lhs = simplify(lhs)
+            rhs = simplify(rhs)
+
+            # Check if they're equal
+            is_equal = simplify(lhs - rhs) == 0
+
+            if not is_equal:
+                all_equal = False
+                break
 
         # Return result
-        result_text = 'True' if is_equal else 'False'
+        result_text = 'True' if all_equal else 'False'
 
         return CellFunctionResult(
             visible_solutions=[result_text],
