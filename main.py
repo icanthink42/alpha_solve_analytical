@@ -56,12 +56,6 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Substitute known variables from context
-        for context_var in input_data.context.variables:
-            var_symbol = symbols(context_var.name)
-            var_value = sympify(context_var.value)
-            equation = equation.subs(var_symbol, var_value)
-
         # Get the variable to solve for (first free symbol)
         variables = list(equation.free_symbols)
         if not variables:
@@ -72,21 +66,55 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
 
         var = variables[0]
 
-        # Solve the equation
-        solutions = solve(equation, var)
+        # Build list of substitution combinations
+        # For each context variable, create substitution for each of its values
+        context_vars_with_values = []
+        for context_var in input_data.context.variables:
+            var_symbol = symbols(context_var.name)
+            if var_symbol != var and var_symbol in equation.free_symbols:
+                context_vars_with_values.append((var_symbol, context_var.values))
+
+        # Generate all combinations of substitutions
+        from itertools import product
+
+        all_solutions = set()  # Use set to avoid duplicates
+        visible_solutions = []
+
+        if context_vars_with_values:
+            # Get all variable symbols and their value lists
+            var_symbols = [v[0] for v in context_vars_with_values]
+            value_lists = [v[1] for v in context_vars_with_values]
+
+            # Generate all combinations
+            for value_combo in product(*value_lists):
+                # Create substitution dictionary
+                subs_dict = dict(zip(var_symbols, [sympify(v) for v in value_combo]))
+
+                # Substitute and solve
+                substituted_eq = equation.subs(subs_dict)
+                solutions = solve(substituted_eq, var)
+
+                # Collect solutions
+                for solution in solutions:
+                    all_solutions.add(solution)
+        else:
+            # No context variables to substitute, solve directly
+            solutions = solve(equation, var)
+            all_solutions.update(solutions)
 
         # Format the solutions
-        visible_solutions = []
         new_variables = list(input_data.context.variables)
 
-        if solutions:
-            # Use all solutions
-            for solution in solutions:
+        if all_solutions:
+            # Convert solutions to list and format
+            solution_strings = []
+            for solution in all_solutions:
                 solution_eq = Eq(var, solution)
                 visible_solutions.append(to_latex(solution_eq))
+                solution_strings.append(str(solution))
 
-            # Add or update the variable in context
-            new_var = Variable.create_analytical(str(var), str(solution))
+            # Add or update the variable in context with all solutions
+            new_var = Variable.create_analytical(str(var), solution_strings)
 
             # Remove old variable with same name if exists
             new_variables = [v for v in new_variables if v.name != str(var)]
