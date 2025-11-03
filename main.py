@@ -9,6 +9,7 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
     - LaTeX contains an equals sign (=)
     - LaTeX can be parsed into a SymPy expression
     - Expression has at least one variable
+    - At least one variable is NOT already defined in the context
     """
     try:
         latex = input_data.cell.get('latex', '').strip()
@@ -26,6 +27,17 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
 
         # Check if it has free symbols (variables)
         if not expr.free_symbols:
+            return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
+
+        # Check if at least one variable is NOT in the context
+        context_var_names = {v.name for v in input_data.context.variables}
+        has_unsolved_variable = any(
+            str(symbol) not in context_var_names
+            for symbol in expr.free_symbols
+        )
+
+        if not has_unsolved_variable:
+            # All variables are already defined, don't use this solver
             return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
         # It's solvable!
@@ -56,7 +68,8 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Get the variable to solve for (first free symbol)
+        # Get the variable to solve for
+        # Prefer variables that are NOT in the context
         variables = list(equation.free_symbols)
         if not variables:
             return CellFunctionResult(
@@ -64,7 +77,23 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        var = variables[0]
+        # Get list of variables already in context
+        context_var_names = {v.name for v in input_data.context.variables}
+
+        # Try to find a variable not in context
+        var = None
+        for candidate in sorted(variables, key=str):
+            if str(candidate) not in context_var_names:
+                var = candidate
+                break
+
+        # If all variables are in context, we can't solve
+        # (because we can substitute all of them, leaving nothing to solve for)
+        if var is None:
+            return CellFunctionResult(
+                visible_solutions=['All variables already defined in context'],
+                new_context=input_data.context
+            )
 
         # Build list of substitution combinations
         # For each context variable, create substitution for each of its values
