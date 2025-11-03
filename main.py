@@ -61,18 +61,21 @@ def check_equal(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Substitute all variables from context
-        equation = expr
+        # Substitute all variables from context on both sides separately
+        lhs = expr.lhs
+        rhs = expr.rhs
+
         for context_var in input_data.context.variables:
             var_symbol = symbols(context_var.name)
             # Use the first value if multiple exist
             if context_var.values:
                 var_value = sympify(context_var.values[0])
-                equation = equation.subs(var_symbol, var_value)
+                lhs = lhs.subs(var_symbol, var_value)
+                rhs = rhs.subs(var_symbol, var_value)
 
         # Simplify both sides
-        lhs = simplify(equation.lhs)
-        rhs = simplify(equation.rhs)
+        lhs = simplify(lhs)
+        rhs = simplify(rhs)
 
         # Check if they're equal
         is_equal = simplify(lhs - rhs) == 0
