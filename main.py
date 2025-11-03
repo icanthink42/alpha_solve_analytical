@@ -19,11 +19,9 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
 
         # Try to parse it first
         expr = from_latex(latex)
-        print(expr)
 
         # Check if the parsed expression is an equation
         if isinstance(expr, Equality):
-            print('is equation')
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # Double-check for equals sign in raw LaTeX
@@ -40,6 +38,8 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
 def simple_simplify(input_data: CellFunctionInput) -> CellFunctionResult:
     """
     Simplify an expression and display the result.
+    Substitutes known variables from context before simplifying.
+    Generates one solution for each combination of context variable values.
     """
     latex = input_data.cell.get('latex', '').strip()
 
@@ -47,12 +47,41 @@ def simple_simplify(input_data: CellFunctionInput) -> CellFunctionResult:
         # Parse the LaTeX expression
         expr = from_latex(latex)
 
-        # Simplify the expression
-        simplified = simplify(expr)
+        # Build list of context variables and their values
+        from itertools import product
+
+        context_vars_with_values = []
+        for context_var in input_data.context.variables:
+            var_symbol = symbols(context_var.name)
+            if var_symbol in expr.free_symbols and context_var.values:
+                context_vars_with_values.append((var_symbol, context_var.values))
+
+        visible_solutions = []
+
+        if context_vars_with_values:
+            # Get all variable symbols and their value lists
+            var_symbols = [v[0] for v in context_vars_with_values]
+            value_lists = [v[1] for v in context_vars_with_values]
+
+            # Generate all combinations
+            for value_combo in product(*value_lists):
+                # Create substitution dictionary
+                subs_dict = dict(zip(var_symbols, [sympify(v) for v in value_combo]))
+
+                # Substitute and simplify
+                substituted_expr = expr.subs(subs_dict)
+                simplified = simplify(substituted_expr)
+
+                # Add to solutions
+                visible_solutions.append(to_latex(simplified))
+        else:
+            # No context variables to substitute, just simplify
+            simplified = simplify(expr)
+            visible_solutions.append(to_latex(simplified))
 
         # Context remains unchanged
         return CellFunctionResult(
-            visible_solutions=[to_latex(simplified)],
+            visible_solutions=visible_solutions,
             new_context=input_data.context
         )
 
