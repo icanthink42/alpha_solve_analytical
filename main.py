@@ -1,4 +1,5 @@
 from sympy import solve, symbols, sympify, Eq, simplify
+from sympy.core.relational import Equality
 
 
 def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
@@ -16,15 +17,15 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
         if not latex:
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
-        # Check if it's NOT an equation (no =)
-        if '=' in latex:
-            return MetaFunctionResult(index=50, name='Simplify', use_result=False)
-
-        # Try to parse it
+        # Try to parse it first
         expr = from_latex(latex)
 
-        # Check if the parsed expression is an equation (has lhs and rhs)
-        if hasattr(expr, 'lhs') and hasattr(expr, 'rhs'):
+        # Check if the parsed expression is an equation
+        if isinstance(expr, Equality):
+            return MetaFunctionResult(index=50, name='Simplify', use_result=False)
+
+        # Double-check for equals sign in raw LaTeX
+        if '=' in latex:
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # It's simplifiable!
@@ -66,8 +67,8 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
     Check if the equation can be solved.
     Returns use_result=True only if:
     - Cell has LaTeX content
-    - LaTeX contains an equals sign (=)
     - LaTeX can be parsed into a SymPy expression
+    - Expression is an equation (Equality type)
     - Expression has at least one variable
     - At least one variable is NOT already defined in the context
     """
@@ -78,12 +79,12 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
         if not latex:
             return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
-        # Check if it's an equation (has =)
-        if '=' not in latex:
-            return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
-
         # Try to parse it
         expr = from_latex(latex)
+
+        # Check if it's an equation (Equality type)
+        if not isinstance(expr, Equality):
+            return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
         # Check if it has free symbols (variables)
         if not expr.free_symbols:
