@@ -23,6 +23,7 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
 
         # Check if the parsed expression is an equation
         if isinstance(expr, Equality):
+            print('is equation')
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # Double-check for equals sign in raw LaTeX
