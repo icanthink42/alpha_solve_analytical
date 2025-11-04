@@ -11,4 +11,7 @@ functionName = "check_equal"
 functionName = "simple_simplify"
 
 [[functions]]
+functionName = "solve_ode"
+
+[[functions]]
 functionName = "solve_simple"
