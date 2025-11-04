@@ -116,6 +116,7 @@ def solve_ode(input_data: CellFunctionInput) -> CellFunctionResult:
                 context_vars_with_values.append((var_symbol, context_var.values))
 
         visible_solutions = []
+        all_solution_exprs = []  # Collect all solution expressions
 
         if context_vars_with_values:
             # Get all variable symbols and their value lists
@@ -139,6 +140,9 @@ def solve_ode(input_data: CellFunctionInput) -> CellFunctionResult:
 
                     for solution in solutions:
                         visible_solutions.append(to_latex(solution))
+                        # Extract the RHS of the solution (the actual expression)
+                        if hasattr(solution, 'rhs'):
+                            all_solution_exprs.append(solution.rhs)
 
                 except Exception as solve_error:
                     visible_solutions.append(f"Could not solve ODE: {str(solve_error)}")
@@ -153,16 +157,40 @@ def solve_ode(input_data: CellFunctionInput) -> CellFunctionResult:
 
                 for solution in solutions:
                     visible_solutions.append(to_latex(solution))
+                    # Extract the RHS of the solution (the actual expression)
+                    if hasattr(solution, 'rhs'):
+                        all_solution_exprs.append(solution.rhs)
 
             except Exception as solve_error:
                 visible_solutions.append(f"Could not solve ODE: {str(solve_error)}")
 
-        # For ODEs, we don't typically add to context since the solution
-        # is a function, not a simple variable value
+        # Add the solution to context
+        new_variables = list(input_data.context.variables)
+
+        if all_solution_exprs:
+            # Get the function name (e.g., 'x' from x(t))
+            if func_expr.is_Symbol:
+                func_name = str(func_expr)
+            else:
+                # func is like x(t), extract the function name
+                func_name = str(func.func)
+
+            # Convert solution expressions to strings
+            solution_strings = [str(expr) for expr in all_solution_exprs]
+
+            # Create a variable with the solution
+            new_var = Variable.create_analytical(func_name, solution_strings)
+
+            # Remove old variable with same name if exists
+            new_variables = [v for v in new_variables if v.name != func_name]
+            new_variables.append(new_var)
+
+        # Create new context with updated variables
+        new_context = Context(variables=new_variables)
 
         return CellFunctionResult(
             visible_solutions=visible_solutions,
-            new_context=input_data.context
+            new_context=new_context
         )
 
     except Exception as e:
