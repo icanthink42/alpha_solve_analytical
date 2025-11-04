@@ -1,5 +1,6 @@
-from sympy import dsolve, symbols, Function, Derivative, Eq
+from sympy import dsolve, symbols, Function, Derivative, Eq, sympify
 from sympy.core.relational import Equality
+from itertools import product
 from alpha_solve import CellFunctionInput, CellFunctionResult, MetaFunctionResult, Variable, Context
 from sympy_tools import from_latex, to_latex
 
@@ -106,31 +107,68 @@ def solve_ode(input_data: CellFunctionInput) -> CellFunctionResult:
             equation = expr
             func = func_expr
 
-        # Try to solve the ODE
-        try:
-            solutions = dsolve(equation, func)
+        # Build list of substitution combinations (same pattern as solve_simple.py)
+        # For each context variable, create substitution for each of its values
+        context_vars_with_values = []
+        for context_var in input_data.context.variables:
+            var_symbol = symbols(context_var.name)
+            if var_symbol in equation.free_symbols:
+                context_vars_with_values.append((var_symbol, context_var.values))
 
-            # dsolve can return a single solution or a list
-            if not isinstance(solutions, list):
-                solutions = [solutions]
+        visible_solutions = []
 
-            visible_solutions = []
-            for solution in solutions:
-                visible_solutions.append(to_latex(solution))
+        if context_vars_with_values:
+            # Get all variable symbols and their value lists
+            var_symbols = [v[0] for v in context_vars_with_values]
+            value_lists = [v[1] for v in context_vars_with_values]
 
-            # For ODEs, we don't typically add to context since the solution
-            # is a function, not a simple variable value
+            # Generate all combinations
+            for value_combo in product(*value_lists):
+                # Create substitution dictionary
+                subs_dict = dict(zip(var_symbols, [sympify(v) for v in value_combo]))
 
-            return CellFunctionResult(
-                visible_solutions=visible_solutions,
-                new_context=input_data.context
-            )
+                # Substitute and solve
+                substituted_eq = equation.subs(subs_dict)
 
-        except Exception as solve_error:
-            return CellFunctionResult(
-                visible_solutions=[f"Could not solve ODE: {str(solve_error)}"],
-                new_context=input_data.context
-            )
+                try:
+                    solutions = dsolve(substituted_eq, func)
+
+                    # dsolve can return a single solution or a list
+                    if not isinstance(solutions, list):
+                        solutions = [solutions]
+
+                    # Format with context values shown
+                    context_str = ", ".join([f"{var}={val}" for var, val in zip(var_symbols, value_combo)])
+                    visible_solutions.append(f"For {context_str}:")
+
+                    for solution in solutions:
+                        visible_solutions.append("  " + to_latex(solution))
+
+                except Exception as solve_error:
+                    context_str = ", ".join([f"{var}={val}" for var, val in zip(var_symbols, value_combo)])
+                    visible_solutions.append(f"Could not solve for {context_str}: {str(solve_error)}")
+        else:
+            # No context variables to substitute, solve directly
+            try:
+                solutions = dsolve(equation, func)
+
+                # dsolve can return a single solution or a list
+                if not isinstance(solutions, list):
+                    solutions = [solutions]
+
+                for solution in solutions:
+                    visible_solutions.append(to_latex(solution))
+
+            except Exception as solve_error:
+                visible_solutions.append(f"Could not solve ODE: {str(solve_error)}")
+
+        # For ODEs, we don't typically add to context since the solution
+        # is a function, not a simple variable value
+
+        return CellFunctionResult(
+            visible_solutions=visible_solutions,
+            new_context=input_data.context
+        )
 
     except Exception as e:
         # If solving fails, return error message
