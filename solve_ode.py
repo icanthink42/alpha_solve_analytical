@@ -137,16 +137,11 @@ def solve_ode(input_data: CellFunctionInput) -> CellFunctionResult:
                     if not isinstance(solutions, list):
                         solutions = [solutions]
 
-                    # Format with context values shown
-                    context_str = ", ".join([f"{var}={val}" for var, val in zip(var_symbols, value_combo)])
-                    visible_solutions.append(f"For {context_str}:")
-
                     for solution in solutions:
-                        visible_solutions.append("  " + to_latex(solution))
+                        visible_solutions.append(to_latex(solution))
 
                 except Exception as solve_error:
-                    context_str = ", ".join([f"{var}={val}" for var, val in zip(var_symbols, value_combo)])
-                    visible_solutions.append(f"Could not solve for {context_str}: {str(solve_error)}")
+                    visible_solutions.append(f"Could not solve ODE: {str(solve_error)}")
         else:
             # No context variables to substitute, solve directly
             try:
