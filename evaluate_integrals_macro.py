@@ -155,6 +155,12 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                 # Convert to LaTeX for display
                 from sympy_tools import to_latex
                 result_str = to_latex(result)
+                print(f"Symbolic result LaTeX: {result_str}")
+
+                # If result starts with a minus sign, wrap in parentheses for better parsing
+                if result_str.strip().startswith('-'):
+                    result_str = f'({result_str.strip()})'
+                    print(f"Wrapped result: {result_str}")
 
             # Replace the integral with the result
             full_integral = modified_latex[start_pos:integral_end]
