@@ -30,26 +30,42 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     """
     modified_latex = input_data.latex
 
-    # Pattern to match integrals: \int_{lower}^{upper} ... d{var}
-    # This matches \int _{ }^{ } or \int _a^b or \int _{a}^{b}
-    # We'll look for \int followed by bounds, then capture up to d{variable}
-    # Made the bounds parts optional to handle both indefinite and definite
-    pattern = r'\\int(?:\s*_\{?([^{}^]*?)\}?)?\s*(?:\^\{?([^{}]*?)\}?)?\s*(.*?)\s*d([a-zA-Z])'
+    # Pattern to match integrals with bounds in braces
+    pattern_with_braces = r'\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}\s*(.*?)\s*d\s*([a-zA-Z])'
+
+    # Pattern for integrals without braces or bounds (indefinite)
+    pattern_no_bounds = r'\\int\s+([^d]*?)\s*d\s*([a-zA-Z])'
 
     # Keep processing until no more integrals are found
     max_iterations = 10
     iteration = 0
 
     while iteration < max_iterations:
-        match = re.search(pattern, modified_latex)
+        # Try pattern with braces first
+        match = re.search(pattern_with_braces, modified_latex)
+        is_definite = True
+
+        if not match:
+            # Try pattern without bounds (indefinite integral)
+            match = re.search(pattern_no_bounds, modified_latex)
+            is_definite = False
+
         if not match:
             break
 
         iteration += 1
-        lower_bound_str = (match.group(1) or '').strip()
-        upper_bound_str = (match.group(2) or '').strip()
-        integrand_latex = match.group(3).strip()
-        var_name = match.group(4)
+
+        if is_definite:
+            lower_bound_str = (match.group(1) or '').strip()
+            upper_bound_str = (match.group(2) or '').strip()
+            integrand_latex = match.group(3).strip()
+            var_name = match.group(4)
+        else:
+            # Indefinite integral
+            lower_bound_str = ''
+            upper_bound_str = ''
+            integrand_latex = match.group(1).strip()
+            var_name = match.group(2)
 
         try:
             # Parse the integrand
