@@ -13,6 +13,8 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
     - LaTeX can be parsed into a SymPy expression
     """
     try:
+        print(f"[meta_simple_simplify] Cell object: {input_data.cell}")
+        print(f"[meta_simple_simplify] Cell keys: {list(input_data.cell.keys())}")
         latex = input_data.cell.get('latex', '').strip()
         print(f"[meta_simple_simplify] Checking latex: {latex}")
         print(f"[meta_simple_simplify] Latex repr: {repr(latex)}")
@@ -24,6 +26,7 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # Try to parse it first
+        print(f"[meta_simple_simplify] About to call from_latex with: {repr(latex)}")
         expr = from_latex(latex)
         print(f"[meta_simple_simplify] Parsed successfully: {expr}")
 
