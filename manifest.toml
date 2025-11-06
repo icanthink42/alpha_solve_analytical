@@ -15,3 +15,8 @@ functionName = "solve_ode"
 
 [[functions]]
 functionName = "solve_simple"
+
+# Proc macro that evaluates integrals
+[[proc_macros]]
+functionName = "evaluate_integrals"
+metaFunctionName = "meta_evaluate_integrals"
