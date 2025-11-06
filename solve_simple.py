@@ -1,6 +1,6 @@
 from sympy import solve, symbols, sympify, Eq
 from sympy.core.relational import Equality
-from alpha_solve import CellFunctionInput, CellFunctionResult, MetaFunctionResult, Variable, Context
+from alpha_solve import CellFunctionInput, CellFunctionResult, MetaFunctionResult, Variable, Context, Dropdown
 from sympy_tools import from_latex, to_latex
 
 
@@ -13,6 +13,8 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
     - Expression is an equation (Equality type)
     - Expression has at least one variable
     - At least one variable is NOT already defined in the context
+
+    Also provides a dropdown for selecting which variable to solve for.
     """
     try:
         latex = input_data.cell.get('latex', '').strip()
@@ -32,19 +34,30 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
         if not expr.free_symbols:
             return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
-        # Check if at least one variable is NOT in the context
+        # Get variables that are NOT in the context
         context_var_names = {v.name for v in input_data.context.variables}
-        has_unsolved_variable = any(
-            str(symbol) not in context_var_names
-            for symbol in expr.free_symbols
-        )
+        unsolved_variables = [
+            str(symbol) for symbol in sorted(expr.free_symbols, key=str)
+            if str(symbol) not in context_var_names
+        ]
 
-        if not has_unsolved_variable:
+        if not unsolved_variables:
             # All variables are already defined, don't use this solver
             return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
+        # Create dropdown for variable selection
+        dropdown = Dropdown(
+            title="Solve for",
+            items=unsolved_variables
+        )
+
         # It's solvable!
-        return MetaFunctionResult(index=100, name='Simple Solver', use_result=True)
+        return MetaFunctionResult(
+            index=100,
+            name='Simple Solver',
+            use_result=True,
+            dropdowns=[dropdown]
+        )
     except Exception as e:
         # If anything fails, don't use this solver
         return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
@@ -54,6 +67,7 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
     """
     Solve a simple equation and update the context with the solution.
     Displays result as "varname = value"
+    Uses the variable selected in the dropdown.
     """
     latex = input_data.cell.get('latex', '').strip()
 
@@ -71,32 +85,40 @@ def solve_simple(input_data: CellFunctionInput) -> CellFunctionResult:
                 new_context=input_data.context
             )
 
-        # Get the variable to solve for
-        # Prefer variables that are NOT in the context
-        variables = list(equation.free_symbols)
-        if not variables:
-            return CellFunctionResult(
-                visible_solutions=['No variables to solve for'],
-                new_context=input_data.context
-            )
+        # Get the variable to solve for from the dropdown selection
+        selected_var_name = input_data.get_dropdown_selection("Solve for")
 
-        # Get list of variables already in context
-        context_var_names = {v.name for v in input_data.context.variables}
+        if not selected_var_name:
+            # Fallback: use first unsolved variable if no dropdown selection
+            variables = list(equation.free_symbols)
+            if not variables:
+                return CellFunctionResult(
+                    visible_solutions=['No variables to solve for'],
+                    new_context=input_data.context
+                )
 
-        # Try to find a variable not in context
-        var = None
-        for candidate in sorted(variables, key=str):
-            if str(candidate) not in context_var_names:
-                var = candidate
-                break
+            context_var_names = {v.name for v in input_data.context.variables}
+            var = None
+            for candidate in sorted(variables, key=str):
+                if str(candidate) not in context_var_names:
+                    var = candidate
+                    break
 
-        # If all variables are in context, we can't solve
-        # (because we can substitute all of them, leaving nothing to solve for)
-        if var is None:
-            return CellFunctionResult(
-                visible_solutions=['All variables already defined in context'],
-                new_context=input_data.context
-            )
+            if var is None:
+                return CellFunctionResult(
+                    visible_solutions=['All variables already defined in context'],
+                    new_context=input_data.context
+                )
+        else:
+            # Use the selected variable from dropdown
+            var = symbols(selected_var_name)
+
+            # Verify it's actually in the equation
+            if var not in equation.free_symbols:
+                return CellFunctionResult(
+                    visible_solutions=[f'Variable {selected_var_name} not found in equation'],
+                    new_context=input_data.context
+                )
 
         # Build list of substitution combinations
         # For each context variable, create substitution for each of its values
