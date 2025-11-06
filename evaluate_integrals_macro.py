@@ -30,10 +30,11 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     """
     modified_latex = input_data.latex
 
-    # Pattern to match definite integrals: \int_{lower}^{upper} ... d{var}
+    # Pattern to match integrals: \int_{lower}^{upper} ... d{var}
     # This matches \int _{ }^{ } or \int _a^b or \int _{a}^{b}
     # We'll look for \int followed by bounds, then capture up to d{variable}
-    pattern = r'\\int\s*_\{?([^{}^]*)\}?\s*\^\{?([^{}]*)\}?\s*(.*?)\s*d([a-zA-Z])'
+    # Made the bounds parts optional to handle both indefinite and definite
+    pattern = r'\\int(?:\s*_\{?([^{}^]*?)\}?)?\s*(?:\^\{?([^{}]*?)\}?)?\s*(.*?)\s*d([a-zA-Z])'
 
     # Keep processing until no more integrals are found
     max_iterations = 10
@@ -45,8 +46,8 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             break
 
         iteration += 1
-        lower_bound_str = match.group(1).strip()
-        upper_bound_str = match.group(2).strip()
+        lower_bound_str = (match.group(1) or '').strip()
+        upper_bound_str = (match.group(2) or '').strip()
         integrand_latex = match.group(3).strip()
         var_name = match.group(4)
 
@@ -150,12 +151,13 @@ def meta_evaluate_integrals(input_data: ProcMacroInput) -> MetaFunctionResult:
     Returns:
         MetaFunctionResult indicating whether to use this proc macro
     """
-    # Check if the latex contains definite integral patterns
-    has_integral = bool(re.search(r'\\int\s*_\{?[^{}^]*\}?\s*\^\{?[^{}]*\}?', input_data.latex))
+    # Check if the latex contains integral patterns (both definite and indefinite)
+    # Match \int with optional bounds followed by d{variable}
+    has_integral = bool(re.search(r'\\int.*?d[a-zA-Z]', input_data.latex))
 
     return MetaFunctionResult(
         index=3,  # Priority order (run before num() but after other transformations)
-        name="Evaluate Definite Integrals",
+        name="Evaluate Integrals",
         use_result=has_integral
     )
 
