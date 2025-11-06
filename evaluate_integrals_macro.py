@@ -142,7 +142,7 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             result = integrate(integrand, (var_symbol, lower_sym, upper_sym))
 
             # Simplify the result
-            from sympy import simplify, factor, expand
+            from sympy import simplify
             result = simplify(result)
 
             # Only convert to numerical if both bounds are pure numbers (not symbolic)
@@ -155,7 +155,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                 # Convert to LaTeX for display
                 from sympy_tools import to_latex
                 result_str = to_latex(result)
-                print(f"Symbolic result LaTeX: {result_str}")
 
             # Replace the integral with the result
             full_integral = modified_latex[start_pos:integral_end]

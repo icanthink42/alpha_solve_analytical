@@ -13,39 +13,27 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
     - LaTeX can be parsed into a SymPy expression
     """
     try:
-        print(f"[meta_simple_simplify] Cell object: {input_data.cell}")
-        print(f"[meta_simple_simplify] Cell keys: {list(input_data.cell.keys())}")
         latex = input_data.cell.get('latex', '').strip()
-        print(f"[meta_simple_simplify] Checking latex: {latex}")
-        print(f"[meta_simple_simplify] Latex repr: {repr(latex)}")
-        print(f"[meta_simple_simplify] Latex length: {len(latex)}")
 
         # Check if there's any content
         if not latex:
-            print("[meta_simple_simplify] No content")
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # Try to parse it first
-        print(f"[meta_simple_simplify] About to call from_latex with: {repr(latex)}")
         expr = from_latex(latex)
-        print(f"[meta_simple_simplify] Parsed successfully: {expr}")
 
         # Check if the parsed expression is an equation
         if isinstance(expr, Equality):
-            print("[meta_simple_simplify] Is an equation, rejecting")
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # Double-check for equals sign in raw LaTeX
         if '=' in latex:
-            print("[meta_simple_simplify] Contains =, rejecting")
             return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
         # It's simplifiable!
-        print("[meta_simple_simplify] Accepting!")
         return MetaFunctionResult(index=50, name='Simplify', use_result=True)
     except Exception as e:
         # If anything fails, don't use this simplifier
-        print(f"[meta_simple_simplify] Exception: {e}")
         return MetaFunctionResult(index=50, name='Simplify', use_result=False)
 
 
