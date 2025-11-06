@@ -30,25 +30,30 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     """
     modified_latex = input_data.latex
 
-    # Pattern to match integrals with bounds in braces
-    pattern_with_braces = r'\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}\s*(.*?)\s*d\s*([a-zA-Z])'
-
-    # Pattern for integrals without braces or bounds (indefinite)
-    pattern_no_bounds = r'\\int\s+([^d]*?)\s*d\s*([a-zA-Z])'
+    # Two types: definite (with both bounds) or indefinite (no bounds)
+    patterns = [
+        # Pattern 1: Both bounds with braces: \int_{a}^{b} or \int_{ }^{ }
+        (r'\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}\s*(.*?)\s*d\s*([a-zA-Z])', True),
+        # Pattern 2: Both bounds without braces: \int_a^b
+        (r'\\int\s*_\s*([^\s\{^]+)\s*\^\s*([^\s\{]+)\s*(.*?)\s*d\s*([a-zA-Z])', True),
+        # Pattern 3: No bounds (indefinite): \int f(x) dx
+        (r'\\int\s+([^d_^]*?)\s*d\s*([a-zA-Z])', False),
+    ]
 
     # Keep processing until no more integrals are found
     max_iterations = 10
     iteration = 0
 
     while iteration < max_iterations:
-        # Try pattern with braces first
-        match = re.search(pattern_with_braces, modified_latex)
-        is_definite = True
+        # Try each pattern in order
+        match = None
+        is_definite = False
 
-        if not match:
-            # Try pattern without bounds (indefinite integral)
-            match = re.search(pattern_no_bounds, modified_latex)
-            is_definite = False
+        for pattern, definite in patterns:
+            match = re.search(pattern, modified_latex)
+            if match:
+                is_definite = definite
+                break
 
         if not match:
             break
