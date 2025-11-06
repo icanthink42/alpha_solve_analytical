@@ -15,6 +15,8 @@ def meta_simple_simplify(input_data: CellFunctionInput) -> MetaFunctionResult:
     try:
         latex = input_data.cell.get('latex', '').strip()
         print(f"[meta_simple_simplify] Checking latex: {latex}")
+        print(f"[meta_simple_simplify] Latex repr: {repr(latex)}")
+        print(f"[meta_simple_simplify] Latex length: {len(latex)}")
 
         # Check if there's any content
         if not latex:
