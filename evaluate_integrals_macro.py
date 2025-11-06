@@ -152,12 +152,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                 result_str = str(result_val)
             else:
                 # At least one bound is symbolic, keep it symbolic
-                # Try to factor to get a nicer form
-                try:
-                    result = factor(result)
-                except:
-                    pass
-
                 # Convert to LaTeX for display
                 from sympy_tools import to_latex
                 result_str = to_latex(result)
