@@ -45,18 +45,21 @@ def meta_solve_simple(input_data: CellFunctionInput) -> MetaFunctionResult:
             # All variables are already defined, don't use this solver
             return MetaFunctionResult(index=100, name='Simple Solver', use_result=False)
 
-        # Create dropdown for variable selection
-        dropdown = Dropdown(
-            title="Solve for",
-            items=unsolved_variables
-        )
+        # Only create dropdown if there are multiple variables to choose from
+        dropdowns = None
+        if len(unsolved_variables) > 1:
+            dropdown = Dropdown(
+                title="Solve for",
+                items=unsolved_variables
+            )
+            dropdowns = [dropdown]
 
         # It's solvable!
         return MetaFunctionResult(
             index=100,
             name='Simple Solver',
             use_result=True,
-            dropdowns=[dropdown]
+            dropdowns=dropdowns
         )
     except Exception as e:
         # If anything fails, don't use this solver
