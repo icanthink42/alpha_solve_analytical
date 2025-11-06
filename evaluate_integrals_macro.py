@@ -33,11 +33,12 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     # Two types: definite (with both bounds) or indefinite (no bounds)
     patterns = [
         # Pattern 1: Both bounds with braces: \int_{a}^{b} or \int_{ }^{ }
-        (r'\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}\s*(.*?)\s*d\s*([a-zA-Z])', True),
+        # Use greedy match for integrand to capture everything including \left(...\right)
+        (r'\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}\s*(.+?)\s*d\s*([a-zA-Z])\b', True),
         # Pattern 2: Both bounds without braces: \int_a^b
-        (r'\\int\s*_\s*([^\s\{^]+)\s*\^\s*([^\s\{]+)\s*(.*?)\s*d\s*([a-zA-Z])', True),
+        (r'\\int\s*_\s*(\w+)\s*\^\s*(\w+)\s*(.+?)\s*d\s*([a-zA-Z])\b', True),
         # Pattern 3: No bounds (indefinite): \int f(x) dx
-        (r'\\int\s+([^d_^]*?)\s*d\s*([a-zA-Z])', False),
+        (r'\\int\s+(.+?)\s*d\s*([a-zA-Z])\b', False),
     ]
 
     # Keep processing until no more integrals are found
