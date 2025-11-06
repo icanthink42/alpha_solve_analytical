@@ -159,6 +159,7 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             # Replace the integral with the result
             full_integral = modified_latex[start_pos:integral_end]
             modified_latex = modified_latex[:start_pos] + result_str + modified_latex[integral_end:]
+            print(f"Modified LaTeX: {modified_latex}")
 
         except Exception as e:
             # If evaluation fails, skip this integral
