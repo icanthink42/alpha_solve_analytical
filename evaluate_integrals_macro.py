@@ -137,11 +137,24 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                 integrand = integrand.subs(subs_dict)
 
             # Evaluate the definite integral
-            result = integrate(integrand, (var_symbol, sympify(lower_val), sympify(upper_val)))
+            lower_sym = sympify(lower_val)
+            upper_sym = sympify(upper_val)
+            result = integrate(integrand, (var_symbol, lower_sym, upper_sym))
 
-            # Simplify and convert to numerical if possible
-            result_val = N(result)
-            result_str = str(result_val)
+            # Simplify the result
+            from sympy import simplify
+            result = simplify(result)
+
+            # Only convert to numerical if both bounds are pure numbers (not symbolic)
+            if lower_sym.is_number and upper_sym.is_number and not lower_sym.free_symbols and not upper_sym.free_symbols:
+                # Both bounds are numbers, evaluate numerically
+                result_val = N(result)
+                result_str = str(result_val)
+            else:
+                # At least one bound is symbolic, keep it symbolic
+                # Convert to LaTeX for display
+                from sympy_tools import to_latex
+                result_str = to_latex(result)
 
             # Replace the integral with the result
             full_integral = modified_latex[start_pos:integral_end]
