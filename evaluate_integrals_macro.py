@@ -67,8 +67,8 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                     upper_val = context_var.values[0]
 
             # Parse the integrand expression
-            from sympy_tools import _latex_to_sympy_str
-            integrand_str = _latex_to_sympy_str(integrand_latex)
+            from sympy_tools import from_latex
+            integrand_str = from_latex(integrand_latex)
             print(f"[evaluate_integrals] Integrand string: {integrand_str}")
             integrand = sympify(integrand_str)
 
