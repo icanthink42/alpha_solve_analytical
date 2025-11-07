@@ -26,6 +26,7 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
         ProcMacroResult with integrals replaced by their evaluated values
     """
     modified_latex = input_data.latex
+    print(f"[evaluate_integrals] Input LaTeX: {modified_latex}")
 
     # Pattern to match: \int_{...}^{...}\left(...\right)d{var}
     # This matches the template created by the int command
@@ -35,6 +36,8 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     while True:
         match = re.search(pattern, modified_latex)
         if not match:
+            print(f"[evaluate_integrals] No match found for pattern: {pattern}")
+            print(f"[evaluate_integrals] Current LaTeX: {modified_latex}")
             break
 
         start_pos = match.start()
