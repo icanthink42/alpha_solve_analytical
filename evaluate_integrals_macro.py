@@ -31,7 +31,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
         ProcMacroResult with integrals replaced by their analytical results in LaTeX
     """
     modified_latex = input_data.latex
-    print(f"[evaluate_integrals] Input LaTeX: {modified_latex}")
 
     # Pattern to match: \int_{...}^{...}\left(...\right)d{var}
     # OR: \int_x^y\left(...\right)d{var} (when bounds are single chars without braces)
@@ -41,8 +40,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     while True:
         match = re.search(pattern, modified_latex)
         if not match:
-            print(f"[evaluate_integrals] No match found for pattern: {pattern}")
-            print(f"[evaluate_integrals] Current LaTeX: {modified_latex}")
             break
 
         start_pos = match.start()
@@ -90,7 +87,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
 
             # Parse the integrand expression
             integrand = from_latex(integrand_latex)
-            print(f"[evaluate_integrals] Integrand: {integrand}")
 
             # Create variable symbol
             var_symbol = symbols(var)
@@ -112,22 +108,30 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
 
             # Simplify the result
             from sympy import simplify
-            print(f"[evaluate_integrals] Result before simplify: {result}")
             result = simplify(result)
 
             # Always return as LaTeX (analytical result)
             from sympy_tools import to_latex
             result_str = to_latex(result)
-            print(f"[evaluate_integrals] Analytical result (LaTeX): {result_str}")
+            print(f"[evaluate_integrals] Raw LaTeX from to_latex: {repr(result_str)}")
+
+            # Wrap the result in parentheses if it's complex (contains operators or fractions)
+            # This ensures it displays correctly in all contexts
+            if any(op in result_str for op in ['+', '-', '\\frac']):
+                result_str = f'\\left({result_str}\\right)'
+                print(f"[evaluate_integrals] Wrapped in parens: {repr(result_str)}")
 
             # Replace the integral with the result
             modified_latex = modified_latex[:start_pos] + result_str + modified_latex[end_pos:]
-            print(f"Evaluated integral: {match.group(0)} -> {result_str}")
+            print(f"[evaluate_integrals] Full modified LaTeX: {repr(modified_latex)}")
 
         except Exception as e:
             # If evaluation fails, skip this integral and try the next one
             print(f"Failed to evaluate integral: {e}")
             break
+
+    if modified_latex != input_data.latex:
+        print(f"[evaluate_integrals] Returning modified LaTeX: {modified_latex}")
 
     return ProcMacroResult(modified_latex=modified_latex)
 
@@ -142,15 +146,10 @@ def meta_evaluate_integrals(input_data: ProcMacroInput) -> MetaFunctionResult:
     Returns:
         MetaFunctionResult indicating whether to use this proc macro
     """
-    print(f"[meta_evaluate_integrals] Checking LaTeX: {input_data.latex}")
-
     # Check if the latex contains definite integral patterns with the expected format
     # Pattern handles both \int_{x}^{y} and \int_x^y (with or without braces)
     pattern = r'\\int_(?:\{[^}]+\}|[^\s\^\\]+)\^(?:\{[^}]+\}|[^\s\\]+)\\left\(.+?\\right\)d[a-zA-Z]'
     has_complete_integral = bool(re.search(pattern, input_data.latex))
-
-    print(f"[meta_evaluate_integrals] Pattern: {pattern}")
-    print(f"[meta_evaluate_integrals] Match found: {has_complete_integral}")
 
     return MetaFunctionResult(
         index=3,  # Priority order (run before num() at 5, after potential other macros)
