@@ -127,10 +127,15 @@ def meta_evaluate_integrals(input_data: ProcMacroInput) -> MetaFunctionResult:
     Returns:
         MetaFunctionResult indicating whether to use this proc macro
     """
+    print(f"[meta_evaluate_integrals] Checking LaTeX: {input_data.latex}")
+
     # Check if the latex contains definite integral patterns with the expected format
     # Pattern: \int_{...}^{...}\left(...\right)d{var} with all fields filled in
     pattern = r'\\int_\{[^}]+\}\^\{[^}]+\}\\left\(.+?\\right\)d[a-zA-Z]'
     has_complete_integral = bool(re.search(pattern, input_data.latex))
+
+    print(f"[meta_evaluate_integrals] Pattern: {pattern}")
+    print(f"[meta_evaluate_integrals] Match found: {has_complete_integral}")
 
     return MetaFunctionResult(
         index=3,  # Priority order (run before num() at 5, after potential other macros)
