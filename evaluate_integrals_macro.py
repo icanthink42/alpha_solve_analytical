@@ -69,6 +69,7 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             # Parse the integrand expression
             from sympy_tools import _latex_to_sympy_str
             integrand_str = _latex_to_sympy_str(integrand_latex)
+            print(f"[evaluate_integrals] Integrand string: {integrand_str}")
             integrand = sympify(integrand_str)
 
             # Create variable symbol
