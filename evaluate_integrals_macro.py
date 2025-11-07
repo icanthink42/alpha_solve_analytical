@@ -1,29 +1,34 @@
 """
-Proc macro that evaluates definite integrals in LaTeX.
+Proc macro that analytically evaluates definite integrals in LaTeX.
 
 Expects format: \int_{lower}^{upper}\left(integrand\right)dvar
-For example: \int_{0}^{2}\left(x^2\right)dx
+Examples:
+  - \int_{0}^{2}\left(x^2\right)dx -> \frac{8}{3}
+  - \int_{a}^{b}\left(x\right)dx -> \frac{b^2 - a^2}{2}
+  - \int_{0}^{a}\left(x^2\right)dx -> \frac{a^3}{3}
 
-The bounds and integrand are evaluated, with variables substituted from context.
+All results are analytical (symbolic). Bounds and integrand can contain variables
+from context or be symbolic expressions.
 """
 
 import re
 from alpha_solve import ProcMacroInput, ProcMacroResult, MetaFunctionResult
 from sympy_tools import from_latex
-from sympy import sympify, integrate, symbols, N
+from sympy import sympify, integrate, symbols
 
 
 def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     """
-    Proc macro that evaluates definite integrals in LaTeX.
+    Proc macro that analytically evaluates definite integrals in LaTeX.
 
     Expects format: \int_{lower}^{upper}\left(integrand\right)dvar
+    Results are always analytical (symbolic).
 
     Args:
         input_data: ProcMacroInput containing latex and context
 
     Returns:
-        ProcMacroResult with integrals replaced by their evaluated values
+        ProcMacroResult with integrals replaced by their analytical results in LaTeX
     """
     modified_latex = input_data.latex
     print(f"[evaluate_integrals] Input LaTeX: {modified_latex}")
@@ -55,22 +60,37 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             break
 
         try:
-            # Parse bounds - substitute context variables if needed
-            lower_val = lower_bound
-            upper_val = upper_bound
+            # Parse bounds using from_latex
+            from sympy_tools import from_latex
 
-            # Try to substitute context variables in bounds
+            # Convert bounds from LaTeX to sympy
+            try:
+                lower_sym = from_latex(lower_bound)
+            except:
+                # If parsing fails, try as a symbol
+                lower_sym = symbols(lower_bound)
+
+            try:
+                upper_sym = from_latex(upper_bound)
+            except:
+                # If parsing fails, try as a symbol
+                upper_sym = symbols(upper_bound)
+
+            # Substitute context variables in bounds if they exist
+            bound_subs_dict = {}
             for context_var in input_data.context.variables:
-                if context_var.name == lower_bound and context_var.values:
-                    lower_val = context_var.values[0]
-                if context_var.name == upper_bound and context_var.values:
-                    upper_val = context_var.values[0]
+                try:
+                    bound_subs_dict[symbols(context_var.name)] = sympify(context_var.values[0])
+                except:
+                    pass
+
+            if bound_subs_dict:
+                lower_sym = lower_sym.subs(bound_subs_dict)
+                upper_sym = upper_sym.subs(bound_subs_dict)
 
             # Parse the integrand expression
-            from sympy_tools import from_latex
-            integrand_str = from_latex(integrand_latex)
-            print(f"[evaluate_integrals] Integrand string: {integrand_str}")
-            integrand = sympify(integrand_str)
+            integrand = from_latex(integrand_latex)
+            print(f"[evaluate_integrals] Integrand: {integrand}")
 
             # Create variable symbol
             var_symbol = symbols(var)
@@ -88,8 +108,6 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
                 integrand = integrand.subs(subs_dict)
 
             # Evaluate the definite integral
-            lower_sym = sympify(lower_val)
-            upper_sym = sympify(upper_val)
             result = integrate(integrand, (var_symbol, lower_sym, upper_sym))
 
             # Simplify the result
@@ -97,16 +115,10 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
             print(f"[evaluate_integrals] Result before simplify: {result}")
             result = simplify(result)
 
-            # Only convert to numerical if both bounds are pure numbers (not symbolic)
-            if lower_sym.is_number and upper_sym.is_number and not lower_sym.free_symbols and not upper_sym.free_symbols:
-                # Both bounds are numbers, evaluate numerically
-                result_val = N(result)
-                result_str = str(result_val)
-            else:
-                # At least one bound is symbolic, keep it symbolic
-                # Convert to LaTeX for display
-                from sympy_tools import to_latex
-                result_str = to_latex(result)
+            # Always return as LaTeX (analytical result)
+            from sympy_tools import to_latex
+            result_str = to_latex(result)
+            print(f"[evaluate_integrals] Analytical result (LaTeX): {result_str}")
 
             # Replace the integral with the result
             modified_latex = modified_latex[:start_pos] + result_str + modified_latex[end_pos:]
