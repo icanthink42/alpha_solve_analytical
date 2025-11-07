@@ -93,6 +93,7 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
 
             # Simplify the result
             from sympy import simplify
+            print(f"[evaluate_integrals] Result before simplify: {result}")
             result = simplify(result)
 
             # Only convert to numerical if both bounds are pure numbers (not symbolic)
