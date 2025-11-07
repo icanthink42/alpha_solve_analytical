@@ -29,9 +29,9 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
     print(f"[evaluate_integrals] Input LaTeX: {modified_latex}")
 
     # Pattern to match: \int_{...}^{...}\left(...\right)d{var}
-    # This matches the template created by the int command
-    # Note: \right) in LaTeX is the closing delimiter, so we match up to \right
-    pattern = r'\\int_\{([^}]*)\}\^\{([^}]*)\}\\left\((.*?)\\right\)d([a-zA-Z])'
+    # OR: \int_x^y\left(...\right)d{var} (when bounds are single chars without braces)
+    # MathQuill removes braces for single character subscripts/superscripts
+    pattern = r'\\int_(?:\{([^}]+)\}|([^\s\^\\]+))\^(?:\{([^}]+)\}|([^\s\\]+))\\left\((.*?)\\right\)d([a-zA-Z])'
 
     while True:
         match = re.search(pattern, modified_latex)
@@ -44,10 +44,11 @@ def evaluate_integrals(input_data: ProcMacroInput) -> ProcMacroResult:
         end_pos = match.end()
 
         # Extract components from the pattern
-        lower_bound = match.group(1).strip()
-        upper_bound = match.group(2).strip()
-        integrand_latex = match.group(3).strip()
-        var = match.group(4)
+        # Groups: (1) lower with braces, (2) lower without braces, (3) upper with braces, (4) upper without braces, (5) integrand, (6) var
+        lower_bound = (match.group(1) or match.group(2) or '').strip()
+        upper_bound = (match.group(3) or match.group(4) or '').strip()
+        integrand_latex = match.group(5).strip()
+        var = match.group(6)
 
         # Skip empty integrals (template not filled in)
         if not lower_bound or not upper_bound or not integrand_latex:
@@ -130,8 +131,8 @@ def meta_evaluate_integrals(input_data: ProcMacroInput) -> MetaFunctionResult:
     print(f"[meta_evaluate_integrals] Checking LaTeX: {input_data.latex}")
 
     # Check if the latex contains definite integral patterns with the expected format
-    # Pattern: \int_{...}^{...}\left(...\right)d{var} with all fields filled in
-    pattern = r'\\int_\{[^}]+\}\^\{[^}]+\}\\left\(.+?\\right\)d[a-zA-Z]'
+    # Pattern handles both \int_{x}^{y} and \int_x^y (with or without braces)
+    pattern = r'\\int_(?:\{[^}]+\}|[^\s\^\\]+)\^(?:\{[^}]+\}|[^\s\\]+)\\left\(.+?\\right\)d[a-zA-Z]'
     has_complete_integral = bool(re.search(pattern, input_data.latex))
 
     print(f"[meta_evaluate_integrals] Pattern: {pattern}")
